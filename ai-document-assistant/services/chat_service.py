@@ -16,7 +16,7 @@ def get_llm() -> ChatGoogleGenerativeAI:
     """Create and cache the Gemini chat model."""
     # Reusing the model client avoids rebuilding it on every Streamlit rerun.
     return ChatGoogleGenerativeAI(
-        model="gemini-3.8-flash",
+        model="gemini-3.5-flash-lite",
         temperature=0.2,
         google_api_key=get_google_api_key(),
     )
