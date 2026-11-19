@@ -21,6 +21,17 @@ APP_TITLE = "Document Assistant"
 PERSIST_DIRECTORY = Path(".chroma")
 
 
+def get_google_api_key() -> str | None:
+    """Read the API key locally from .env or from Streamlit Cloud secrets."""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        return api_key
+    try:
+        return st.secrets["GOOGLE_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        return None
+
+
 def extract_uploaded_file(uploaded_file) -> list[Document]:
     """Extract text and page metadata from a PDF or TXT upload."""
     suffix = Path(uploaded_file.name).suffix.lower()
@@ -45,12 +56,18 @@ def extract_uploaded_file(uploaded_file) -> list[Document]:
 
 @st.cache_resource(show_spinner=False)
 def get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    return GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    return GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001", google_api_key=get_google_api_key()
+    )
 
 
 @st.cache_resource(show_spinner=False)
 def get_llm() -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0.2)
+    return ChatGoogleGenerativeAI(
+        model="gemini-3.8-flash",
+        temperature=0.2,
+        google_api_key=get_google_api_key(),
+    )
 
 
 def build_vector_store(uploaded_file) -> tuple[Chroma, int]:
@@ -116,7 +133,7 @@ st.set_page_config(page_title=APP_TITLE, page_icon="📄", layout="centered")
 st.title("📄 Document Assistant")
 st.caption("Upload a PDF or text file, then ask questions grounded in its contents.")
 
-if not os.getenv("GOOGLE_API_KEY"):
+if not get_google_api_key():
     st.warning("Add GOOGLE_API_KEY to a .env file before asking questions.")
 
 with st.sidebar:
