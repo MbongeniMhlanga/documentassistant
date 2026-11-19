@@ -50,7 +50,7 @@ def get_embeddings() -> GoogleGenerativeAIEmbeddings:
 
 @st.cache_resource(show_spinner=False)
 def get_llm() -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2)
+    return ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0.2)
 
 
 def build_vector_store(uploaded_file) -> tuple[Chroma, int]:
