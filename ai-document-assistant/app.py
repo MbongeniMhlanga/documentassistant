@@ -24,24 +24,38 @@ def reset_chat() -> None:
 
 
 st.set_page_config(page_title=APP_TITLE, page_icon="📄", layout="centered")
-st.title("📄 Document Assistant")
-st.caption("Upload a PDF or text file, then ask questions grounded in its contents.")
+st.title("Document Assistant")
+st.caption("A focused workspace for understanding your documents with grounded AI answers.")
+
+with st.container(border=True):
+    st.subheader("Ask your document")
+    st.write(
+        "Upload a technical PDF or text file, then explore its topics, processes, "
+        "security guidance, and key details."
+    )
 
 if not get_google_api_key():
     st.warning("Add GOOGLE_API_KEY to a .env file or Streamlit secrets before asking questions.")
 
 with st.sidebar:
-    st.header("Your document")
-    uploaded_file = st.file_uploader("Upload a PDF or TXT file", type=["pdf", "txt"])
+    st.markdown("## Document Assistant")
+    st.caption("Private, document-grounded Q&A")
+    st.divider()
+    st.subheader("Workspace")
+    uploaded_file = st.file_uploader(
+        "Add a document",
+        type=["pdf", "txt"],
+        help="Supported formats: PDF and plain text (.txt).",
+    )
     if st.button("Clear conversation", width="stretch"):
         reset_chat()
         st.rerun()
     st.divider()
-    st.markdown("**How it works**")
+    st.markdown("**Processing pipeline**")
     st.caption(
-        "Text is extracted, split into chunks, embedded with Gemini, and searched in "
-        "ChromaDB before Gemini writes an answer."
+        "Extract → chunk → embed → retrieve → answer"
     )
+    st.caption("Answers are generated from retrieved document context.")
 
 if "messages" not in st.session_state:
     # Session state survives Streamlit reruns caused by widget interactions.
@@ -57,18 +71,37 @@ if uploaded_file is not None:
                 # Keep the vector store and file identity available for future reruns.
                 st.session_state.file_key = file_key
                 st.session_state.file_name = uploaded_file.name
+                st.session_state.chunk_count = chunk_count
                 st.session_state.messages = []
-                st.success(f"Indexed {uploaded_file.name} ({chunk_count} searchable chunks).")
             except Exception as error:
                 st.error(f"Could not process the file: {error}")
                 st.stop()
+
+if st.session_state.get("file_name"):
+    st.subheader("Current document")
+    metric_file, metric_chunks, metric_mode = st.columns(3)
+    with metric_file:
+        st.metric("Document", st.session_state.file_name)
+    with metric_chunks:
+        st.metric("Searchable chunks", st.session_state.get("chunk_count", "—"))
+    with metric_mode:
+        st.metric("Answer mode", "Grounded")
+    st.success(f"{st.session_state.file_name} is ready for questions.")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 if not st.session_state.get("store"):
-    st.info("Upload a document to get started. Try asking: ‘What are the main topics covered?’")
+    with st.container(border=True):
+        st.subheader("Start with a document")
+        st.write("Upload a PDF or TXT file from the sidebar to begin a grounded conversation.")
+        st.markdown(
+            "**Try asking:** \n"
+            "- What are the main topics covered?\n"
+            "- Explain the authentication process.\n"
+            "- Where is API integration discussed?"
+        )
 
 question = st.chat_input(
     "Ask a question about your document…",
